@@ -15,6 +15,7 @@ export default function ExpenseScreen() {
   const db = useSQLiteContext();
 
   const [expenses, setExpenses] = useState([]);
+  const [filter, setFilter] = useState('ALL');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
@@ -121,6 +122,18 @@ export default function ExpenseScreen() {
           onChangeText={setNote}
         />
         <Button title="Add Expense" onPress={addExpense} />
+      </View>
+
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginVertical: 8 }}>
+        <TouchableOpacity onPress={() => setFilter('ALL')}>
+          <Text style={{ fontWeight: filter === 'ALL' ? 'bold' : 'normal' }}>All</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setFilter('WEEK')}>
+          <Text style={{ fontWeight: filter === 'WEEK' ? 'bold' : 'normal' }}>This Week</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setFilter('MONTH')}>
+          <Text style={{ fontWeight: filter === 'MONTH' ? 'bold' : 'normal' }}>This Month</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
