@@ -64,7 +64,7 @@ export default function ExpenseScreen() {
 
     await db.runAsync(
       'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?, ?);',
-      [amountNumber, trimmedCategory, trimmedNote, new Date().toISOString().slice(0,10) || null]
+      [amountNumber, trimmedCategory, trimmedNote, new Date().toISOString().slice(0,10)]
     );
 
     setAmount('');
@@ -163,11 +163,6 @@ export default function ExpenseScreen() {
       alert('Error updating expense');
     }
   }
-
-  const overallTotal = filteredExpenses.reduce((sum, exp) => {
-    const amt = typeof exp.amount === 'number' ? exp.amount : parseFloat(exp.amount);
-    return sum + (isNaN(amt) ? 0 : amt);
-  }, 0);
 
   const overallTotal = filteredExpenses.reduce((sum, exp) => {
     const amt = typeof exp.amount === 'number' ? exp.amount : parseFloat(exp.amount);
