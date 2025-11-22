@@ -42,13 +42,14 @@ export default function ExpenseScreen() {
     }
 
     await db.runAsync(
-      'INSERT INTO expenses (amount, category, note) VALUES (?, ?, ?);',
-      [amountNumber, trimmedCategory, trimmedNote || null]
+      'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?, ?);',
+      [amountNumber, trimmedCategory, trimmedNote, today || null]
     );
 
     setAmount('');
     setCategory('');
     setNote('');
+    
 
     loadExpenses();
   };
