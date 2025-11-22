@@ -8,6 +8,7 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
+  Modal,
 } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 
@@ -63,7 +64,7 @@ export default function ExpenseScreen() {
 
     await db.runAsync(
       'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?, ?);',
-      [amountNumber, trimmedCategory, trimmedNote, today || null]
+      [amountNumber, trimmedCategory, trimmedNote, new Date().toISOString().slice(0,10) || null]
     );
 
     setAmount('');
@@ -178,70 +179,37 @@ export default function ExpenseScreen() {
     return acc;
   }, {});
 
-  return (
-    <View style={{ flex: 1, padding: 16 }}>
-      {/* filter buttons can use setFilter */}
-      {/* use filteredExpenses in FlatList */}
-      <Modal
-      visible={!!editingExpense}
-      animationType="slide"
-      transparent={false}
-    >
-      {editingExpense && (
-        <View style={{ padding: 16 }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
-            Edit Expense
-          </Text>
-
-          <Text>Amount</Text>
-          <TextInput
-            style={{ borderWidth: 1, marginBottom: 8, padding: 8 }}
-            keyboardType="numeric"
-            value={String(editingExpense.amount)}
-            onChangeText={(text) =>
-              setEditingExpense((prev) => ({ ...prev, amount: text }))
-            }
-          />
-
-          <Text>Category</Text>
-          <TextInput
-            style={{ borderWidth: 1, marginBottom: 8, padding: 8 }}
-            value={editingExpense.category}
-            onChangeText={(text) =>
-              setEditingExpense((prev) => ({ ...prev, category: text }))
-            }
-          />
-
-          <Text>Note</Text>
-          <TextInput
-            style={{ borderWidth: 1, marginBottom: 8, padding: 8 }}
-            value={editingExpense.note}
-            onChangeText={(text) =>
-              setEditingExpense((prev) => ({ ...prev, note: text }))
-            }
-          />
-
-          <Text>Date (YYYY-MM-DD)</Text>
-          <TextInput
-            style={{ borderWidth: 1, marginBottom: 16, padding: 8 }}
-            value={editingExpense.date}
-            onChangeText={(text) =>
-              setEditingExpense((prev) => ({ ...prev, date: text }))
-            }
-          />
-
-          <Button title="Save" onPress={handleSaveEdit} />
-          <Button title="Cancel" onPress={() => setEditingExpense(null)} />
-        </View>
-      )}
-      </Modal>
-      <FlatList
-        data={filteredExpenses}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderItem}
-      />
-    </View>
-  );
+  async function handleSaveEdit() {
+    if (!editingExpense) return;
+  
+    const { id, amount, category, note, date } = editingExpense;
+  
+    // Basic validation
+    if (!amount || !category || !date) {
+      alert('Amount, category, and date are required.');
+      return;
+    }
+  
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      alert('Amount must be a positive number.');
+      return;
+    }
+  
+    try {
+      await db.runAsync(
+        'UPDATE expenses SET amount = ?, category = ?, note = ?, date = ? WHERE id = ?;',
+        [numericAmount, category, note, date, id]
+      );
+  
+      await loadExpenses(); // refresh list/totals
+      setEditingExpense(null); // close modal
+  
+    } catch (error) {
+      console.error(error);
+      alert('Error updating expense');
+    }
+  }
 }
 
   return (
@@ -304,6 +272,60 @@ export default function ExpenseScreen() {
           </Text>
         ))}
       </View>
+
+      <Modal
+        visible={!!editingExpense}
+        animationType="slide"
+        transparent={false}
+      >
+        {editingExpense && (
+          <View style={{ padding: 16 }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
+              Edit Expense
+            </Text>
+
+            <Text>Amount</Text>
+            <TextInput
+              style={{ borderWidth: 1, marginBottom: 8, padding: 8 }}
+              keyboardType="numeric"
+              value={String(editingExpense.amount)}
+              onChangeText={(text) =>
+                setEditingExpense((prev) => ({ ...prev, amount: text }))
+              }
+            />
+
+            <Text>Category</Text>
+            <TextInput
+              style={{ borderWidth: 1, marginBottom: 8, padding: 8 }}
+              value={editingExpense.category}
+              onChangeText={(text) =>
+                setEditingExpense((prev) => ({ ...prev, category: text }))
+              }
+            />
+
+            <Text>Note</Text>
+            <TextInput
+              style={{ borderWidth: 1, marginBottom: 8, padding: 8 }}
+              value={editingExpense.note}
+              onChangeText={(text) =>
+                setEditingExpense((prev) => ({ ...prev, note: text }))
+              }
+            />
+
+            <Text>Date (YYYY-MM-DD)</Text>
+            <TextInput
+              style={{ borderWidth: 1, marginBottom: 16, padding: 8 }}
+              value={editingExpense.date}
+              onChangeText={(text) =>
+                setEditingExpense((prev) => ({ ...prev, date: text }))
+              }
+            />
+
+            <Button title="Save" onPress={handleSaveEdit} />
+            <Button title="Cancel" onPress={() => setEditingExpense(null)} />
+          </View>
+        )}
+      </Modal>
 
       <FlatList
         data={filteredExpenses}
