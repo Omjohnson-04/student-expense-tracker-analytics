@@ -199,6 +199,25 @@ export default function ExpenseScreen() {
         </TouchableOpacity>
       </View>
 
+      <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
+      Total Spending (
+      {filter === 'ALL' ? 'All' : filter === 'WEEK' ? 'This Week' : 'This Month'}
+      ): ${overallTotal.toFixed(2)}
+    </Text>
+
+      <View style={{ marginBottom: 12 }}>
+        <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>
+          By Category (
+          {filter === 'ALL' ? 'All' : filter === 'WEEK' ? 'This Week' : 'This Month'}
+          ):
+        </Text>
+        {Object.entries(totalsByCategory).map(([cat, total]) => (
+          <Text key={cat}>
+            • {cat}: ${total.toFixed(2)}
+          </Text>
+        ))}
+      </View>
+
       <FlatList
         data={filteredExpenses}
         keyExtractor={(item) => item.id.toString()}
