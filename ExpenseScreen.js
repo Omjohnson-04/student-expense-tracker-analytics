@@ -129,6 +129,21 @@ export default function ExpenseScreen() {
     return true; // ALL
   });
 
+  const overallTotal = filteredExpenses.reduce((sum, exp) => {
+    const amt = typeof exp.amount === 'number' ? exp.amount : parseFloat(exp.amount);
+    return sum + (isNaN(amt) ? 0 : amt);
+  }, 0);
+
+  const totalsByCategory = filteredExpenses.reduce((acc, exp) => {
+    const cat = exp.category || 'Uncategorized';
+    const amt = typeof exp.amount === 'number' ? exp.amount : parseFloat(exp.amount);
+
+    if (!acc[cat]) acc[cat] = 0;
+    acc[cat] += isNaN(amt) ? 0 : amt;
+
+    return acc;
+  }, {});
+
   return (
     <View style={{ flex: 1, padding: 16 }}>
       {/* filter buttons can use setFilter */}
