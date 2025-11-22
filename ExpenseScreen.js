@@ -169,6 +169,11 @@ export default function ExpenseScreen() {
     return sum + (isNaN(amt) ? 0 : amt);
   }, 0);
 
+  const overallTotal = filteredExpenses.reduce((sum, exp) => {
+    const amt = typeof exp.amount === 'number' ? exp.amount : parseFloat(exp.amount);
+    return sum + (isNaN(amt) ? 0 : amt);
+  }, 0);
+
   const totalsByCategory = filteredExpenses.reduce((acc, exp) => {
     const cat = exp.category || 'Uncategorized';
     const amt = typeof exp.amount === 'number' ? exp.amount : parseFloat(exp.amount);
@@ -179,38 +184,6 @@ export default function ExpenseScreen() {
     return acc;
   }, {});
 
-  async function handleSaveEdit() {
-    if (!editingExpense) return;
-  
-    const { id, amount, category, note, date } = editingExpense;
-  
-    // Basic validation
-    if (!amount || !category || !date) {
-      alert('Amount, category, and date are required.');
-      return;
-    }
-  
-    const numericAmount = parseFloat(amount);
-    if (isNaN(numericAmount) || numericAmount <= 0) {
-      alert('Amount must be a positive number.');
-      return;
-    }
-  
-    try {
-      await db.runAsync(
-        'UPDATE expenses SET amount = ?, category = ?, note = ?, date = ? WHERE id = ?;',
-        [numericAmount, category, note, date, id]
-      );
-  
-      await loadExpenses(); // refresh list/totals
-      setEditingExpense(null); // close modal
-  
-    } catch (error) {
-      console.error(error);
-      alert('Error updating expense');
-    }
-  }
-}
 
   return (
     <SafeAreaView style={styles.container}>
