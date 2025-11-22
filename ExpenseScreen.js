@@ -35,6 +35,7 @@ export default function ExpenseScreen() {
   const db = useSQLiteContext();
   const [expenses, setExpenses] = useState([]);
   const [filter, setFilter] = useState('ALL');
+  const [editingExpense, setEditingExpense] = useState(null);
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
@@ -49,7 +50,6 @@ export default function ExpenseScreen() {
     const amountNumber = parseFloat(amount);
 
     if (isNaN(amountNumber) || amountNumber <= 0) {
-      // Basic validation: ignore invalid or non-positive amounts
       return;
     }
 
@@ -82,7 +82,10 @@ export default function ExpenseScreen() {
 
 
   const renderExpense = ({ item }) => (
-    <View style={styles.expenseRow}>
+    <TouchableOpacity
+      style={styles.expenseRow}
+      onPress={() => setEditingExpense(item)}
+      >
       <View style={{ flex: 1 }}>
         <Text style={styles.expenseAmount}>${Number(item.amount).toFixed(2)}</Text>
         <Text style={styles.expenseCategory}>{item.category}</Text>
@@ -92,7 +95,7 @@ export default function ExpenseScreen() {
       <TouchableOpacity onPress={() => deleteExpense(item.id)}>
         <Text style={styles.delete}>✕</Text>
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 
   useEffect(() => {
@@ -118,7 +121,7 @@ export default function ExpenseScreen() {
   const filteredExpenses = expenses.filter((exp) => {
     if (!exp.date) return filter === 'ALL';
 
-    const expDate = new Date(exp.date); // "YYYY-MM-DD"
+    const expDate = new Date(exp.date);
 
     if (filter === 'WEEK') {
       return isSameWeek(expDate, today);
@@ -126,8 +129,39 @@ export default function ExpenseScreen() {
     if (filter === 'MONTH') {
       return isSameMonth(expDate, today);
     }
-    return true; // ALL
+    return true;
   });
+
+  async function handleSaveEdit() {
+    if (!editingExpense) return;
+  
+    const { id, amount, category, note, date } = editingExpense;
+  
+    if (!amount || !category || !date) {
+      alert('Amount, category, and date are required.');
+      return;
+    }
+  
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      alert('Amount must be a positive number.');
+      return;
+    }
+  
+    try {
+      await db.runAsync(
+        'UPDATE expenses SET amount = ?, category = ?, note = ?, date = ? WHERE id = ?;',
+        [numericAmount, category, note, date, id]
+      );
+
+      await loadExpenses();
+  
+      setEditingExpense(null);
+    } catch (e) {
+      console.error(e);
+      alert('Error updating expense');
+    }
+  }
 
   const overallTotal = filteredExpenses.reduce((sum, exp) => {
     const amt = typeof exp.amount === 'number' ? exp.amount : parseFloat(exp.amount);
@@ -148,6 +182,59 @@ export default function ExpenseScreen() {
     <View style={{ flex: 1, padding: 16 }}>
       {/* filter buttons can use setFilter */}
       {/* use filteredExpenses in FlatList */}
+      <Modal
+      visible={!!editingExpense}
+      animationType="slide"
+      transparent={false}
+    >
+      {editingExpense && (
+        <View style={{ padding: 16 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
+            Edit Expense
+          </Text>
+
+          <Text>Amount</Text>
+          <TextInput
+            style={{ borderWidth: 1, marginBottom: 8, padding: 8 }}
+            keyboardType="numeric"
+            value={String(editingExpense.amount)}
+            onChangeText={(text) =>
+              setEditingExpense((prev) => ({ ...prev, amount: text }))
+            }
+          />
+
+          <Text>Category</Text>
+          <TextInput
+            style={{ borderWidth: 1, marginBottom: 8, padding: 8 }}
+            value={editingExpense.category}
+            onChangeText={(text) =>
+              setEditingExpense((prev) => ({ ...prev, category: text }))
+            }
+          />
+
+          <Text>Note</Text>
+          <TextInput
+            style={{ borderWidth: 1, marginBottom: 8, padding: 8 }}
+            value={editingExpense.note}
+            onChangeText={(text) =>
+              setEditingExpense((prev) => ({ ...prev, note: text }))
+            }
+          />
+
+          <Text>Date (YYYY-MM-DD)</Text>
+          <TextInput
+            style={{ borderWidth: 1, marginBottom: 16, padding: 8 }}
+            value={editingExpense.date}
+            onChangeText={(text) =>
+              setEditingExpense((prev) => ({ ...prev, date: text }))
+            }
+          />
+
+          <Button title="Save" onPress={handleSaveEdit} />
+          <Button title="Cancel" onPress={() => setEditingExpense(null)} />
+        </View>
+      )}
+      </Modal>
       <FlatList
         data={filteredExpenses}
         keyExtractor={(item) => item.id.toString()}
