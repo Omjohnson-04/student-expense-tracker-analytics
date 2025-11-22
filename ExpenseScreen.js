@@ -11,9 +11,28 @@ import {
 } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 
+function isSameMonth(d1, d2) {
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth()
+  );
+}
+
+function isSameWeek(d1, d2) {
+  const oneJan = new Date(d1.getFullYear(), 0, 1);
+  const msInDay = 24 * 60 * 60 * 1000;
+
+  const d1Day = Math.floor((d1 - oneJan) / msInDay);
+  const d2Day = Math.floor((d2 - oneJan) / msInDay);
+
+  const week1 = Math.floor(d1Day / 7);
+  const week2 = Math.floor(d2Day / 7);
+
+  return d1.getFullYear() === d2.getFullYear() && week1 === week2;
+}
+
 export default function ExpenseScreen() {
   const db = useSQLiteContext();
-
   const [expenses, setExpenses] = useState([]);
   const [filter, setFilter] = useState('ALL');
   const [amount, setAmount] = useState('');
@@ -94,6 +113,35 @@ export default function ExpenseScreen() {
     setup();
   }, []);
 
+  const today = new Date();
+
+  const filteredExpenses = expenses.filter((exp) => {
+    if (!exp.date) return filter === 'ALL';
+
+    const expDate = new Date(exp.date); // "YYYY-MM-DD"
+
+    if (filter === 'WEEK') {
+      return isSameWeek(expDate, today);
+    }
+    if (filter === 'MONTH') {
+      return isSameMonth(expDate, today);
+    }
+    return true; // ALL
+  });
+
+  return (
+    <View style={{ flex: 1, padding: 16 }}>
+      {/* filter buttons can use setFilter */}
+      {/* use filteredExpenses in FlatList */}
+      <FlatList
+        data={filteredExpenses}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderItem}
+      />
+    </View>
+  );
+}
+
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.heading}>Student Expense Tracker</Text>
@@ -137,7 +185,7 @@ export default function ExpenseScreen() {
       </View>
 
       <FlatList
-        data={expenses}
+        data={filteredExpenses}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderExpense}
         ListEmptyComponent={
