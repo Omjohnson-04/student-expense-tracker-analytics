@@ -49,31 +49,39 @@ export default function ExpenseScreen() {
   };
   const addExpense = async () => {
     const amountNumber = parseFloat(amount);
-
+  
     if (isNaN(amountNumber) || amountNumber <= 0) {
+      alert('Please enter a valid positive amount.');
       return;
     }
-
+  
     const trimmedCategory = category.trim();
     const trimmedNote = note.trim();
-
+  
     if (!trimmedCategory) {
-      // Category is required
+      alert('Please enter a category.');
       return;
     }
-
-    await db.runAsync(
-      'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?, ?);',
-      [amountNumber, trimmedCategory, trimmedNote, new Date().toISOString().slice(0,10)]
-    );
-
-    setAmount('');
-    setCategory('');
-    setNote('');
-    
-
-    loadExpenses();
+  
+    const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  
+    try {
+      await db.runAsync(
+        'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?, ?);',
+        [amountNumber, trimmedCategory, trimmedNote, todayStr]
+      );
+  
+      setAmount('');
+      setCategory('');
+      setNote('');
+  
+      await loadExpenses();
+    } catch (e) {
+      console.error('Error inserting expense:', e);
+      alert('Error saving expense. Check the console for details.');
+    }
   };
+  
 
 
   const deleteExpense = async (id) => {
